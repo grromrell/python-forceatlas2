@@ -84,7 +84,7 @@ class ForceAtlas2:
             have a much higher gravity, creating a much more compact graph.
         """
         
-        self.graph = graph
+self.graph = graph
         self.iterations = iterations
         self.pos = pos
         self.sizes = sizes
@@ -115,8 +115,7 @@ class ForceAtlas2:
         #Initialize layout data
         nodes = []
         for i in range(len(graph)):
-            node = {'id': 0, 'x': 0, 'y': 0, 'dx' : 0, 'dy' : 0, 'old_dx' : 0, 
-                    'old_dy': 0, 'mass' : 0, 'size' : None}
+            node = {'id': 0, 'x': 0, 'y': 0, 'dx' : 0, 'dy' : 0, 'old_dx' : 0, 'old_dy': 0, 'mass' : 0, 'size' : None}
             
             node['id'] = i
             if pos:
@@ -155,6 +154,7 @@ class ForceAtlas2:
     
     def run_algo(self):
         for i in range(self.iterations):
+            print(i, time.strftime('%D %H:%M:%S', time.localtime()))
             self.go_algo()
         return [(n['x'], n['y']) for n in self.nodes]
     
@@ -181,7 +181,9 @@ class ForceAtlas2:
         #buildRepulsion
         if self.barnes_hut_optimize:
             for i in range(len(self.nodes)):
-                self.queue.put([i, root_region])
+                #i, r = self.region_apply_force(i, root_region)
+                #self.queue.put([i, r])
+                self.region_apply_force(i, root_region)
                 target_thread = self.repulsion_region_thread
                 
         else:
@@ -203,9 +205,7 @@ class ForceAtlas2:
         
         #buildAttraction
         for e in self.edges:
-            self.attraction_force(e, self.lin_log_mode, 
-                                  self.outbound_attraction_distribution, 
-                                  self.adjust_sizes)
+            self.attraction_force(e, self.lin_log_mode, self.outbound_attraction_distribution, self.adjust_sizes)
         
         #Auto adjust speed
         total_swinging = 0
@@ -277,35 +277,35 @@ class ForceAtlas2:
                 
                 n['x'] = x
                 n['y'] = y
-    
+        
+    def region_apply_force(self, i, r):
+            
+        if len(r['nodes']) < 2:
+            self.queue.put([i, r])
+        
+        else:
+            distance = ((n['x'] - r['mass_center_x'])**2 + (n['y'] - r['mass_center_y'])**2) ** (1/2)
+
+            if distance * self.barnes_hut_theta > r['size']:
+                self.queue.put([i, r])
+
+            else:
+                for subregion in r['subregions']:
+                    self.region_apply_force(i, subregion)
+                    
     def repulsion_thread(self):
         
         while self.queue.qsize:
             i,j = self.queue.get()
             self.repulsion_force(i, j, self.adjust_sizes, self.scaling_ratio)
             self.queue.task_done()
-    
+                        
     def repulsion_region_thread(self):
         
         while self.queue.qsize:
             i,r = self.queue.get()
-            
-            if len(self.nodes) < 2:
-                self.repulsion_force_region(0, 1, self.adjust_sizes, self.scaling_ratio)
-                self.queue.task_done()
-                
-            else:
-                n = self.nodes[i]
-                distance = ((n['x'] - r['mass_center_x'])**2 + (n['y'] - r['mass_center_y'])**2) ** (1/2)
-                
-                if distance * self.barnes_hut_theta > r['size']:
-                    self.repulsion_force_region(i, r, self.adjust_sizes, self.scaling_ratio)
-                    
-                else:
-                    for subregion in r['subregions']:
-                        self.repulsion_force_region(i, subregion, self.adjust_sizes, self.scaling_ratio)
-                
-                self.queue.task_done()
+            self.repulsion_force_region(i, r, self.adjust_sizes, self.scaling_ratio)
+            self.queue.task_done()
             
     def repulsion_force(self, i, j, adjust_by_size, coefficient):
         
@@ -517,7 +517,7 @@ class ForceAtlas2:
                     bottom_right_nodes.append(n)
                     
             if len(top_left_nodes) > 0:
-                if len(top_left_nodes) < len(self.nodes):
+                if len(top_left_nodes) < len(r['nodes']):
                     subregion = self.update_mass_and_geometry(top_left_nodes)
                     r['subregions'].append(subregion)
                 else:
@@ -526,7 +526,7 @@ class ForceAtlas2:
                         r['subregions'].append(subregion)
                         
             if len(bottom_left_nodes) > 0:
-                if len(bottom_left_nodes) < len(self.nodes):
+                if len(bottom_left_nodes) < len(r['nodes']):
                     subregion = self.update_mass_and_geometry(bottom_left_nodes)
                     r['subregions'].append(subregion)
                 else:
@@ -535,7 +535,7 @@ class ForceAtlas2:
                         r['subregions'].append(subregion)
                         
             if len(top_right_nodes) > 0:
-                if len(top_right_nodes) < len(self.nodes):
+                if len(top_right_nodes) < len(r['nodes']):
                     subregion = self.update_mass_and_geometry(top_right_nodes)
                     r['subregions'].append(subregion)
                 else:
@@ -544,7 +544,7 @@ class ForceAtlas2:
                         r['subregions'].append(subregion)
                         
             if len(bottom_right_nodes) > 0:
-                if len(bottom_right_nodes) < len(self.nodes):
+                if len(bottom_right_nodes) < len(r['nodes']):
                     subregion = self.update_mass_and_geometry(bottom_right_nodes)
                     r['subregions'].append(subregion)
                 else:
@@ -554,5 +554,5 @@ class ForceAtlas2:
             
             for i in range(len(r['subregions'])):
                 r['subregions'][i] = self.build_subregions(r['subregions'][i])
-                
-            return r
+            
+        return r
