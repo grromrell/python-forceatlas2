@@ -8,8 +8,8 @@ This class requires numpy and python 2.6+.
 
 Original java code can be found here: http://bit.ly/2azXlsj  
 A similar attempt to port ForceAtlas2 can be found here: http://bit.ly/2aLjDGA  
-- This port does not implement all features, such as multiprocessing or avoid collision  
-- This port does have cython optimization, making the base case faster then this version
+- The other port does not implement all features, such as multiprocessing or avoid collision  
+- The other port does have cython optimization, making the base case faster then this version
 
 Future Goals (to be accomplished as required):  
 - Cythonize  
