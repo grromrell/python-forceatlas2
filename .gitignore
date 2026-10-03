@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.so
+*.dylib
+.DS_Store
+demo_*.svg
+layout_demo.html
